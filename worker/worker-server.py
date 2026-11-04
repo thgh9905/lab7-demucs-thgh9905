@@ -49,8 +49,38 @@ def process(job): # pass in a dict
     command = ["python3", "-m", "demucs.separate", "-n", requested_model, "--mp3", "--out", "/tmp/output", input_path]
     result = subprocess.run(command) # run the command
 
-    
+    write_dir = os.path.join("/tmp/output", requested_model, mp3_song_hash)
 
+    parts = ["bass", "drums", "vocals", "other"]
+    for part in parts:
+        track_path = os.path.join(write_dir, f"{part}.mp3")
+        client.fput_object("output", f"{mp3_song_hash}-{part}.mp3", track_path, content_type="audio/mpeg")
+        log_debug(f"Uploaded {mp3_song_hash}-{part}.mp3")
+    log_info(f"Finished separating {mp3_song_hash}")
 
+    client.remove_object("queue", f"{mp3_song_hash}.mp3")
+    os.remove(input_path)
+    shutil.rmtree(write_dir)
+
+    callback = job.get("callback")
+    if callback.get("url"): 
+        try:
+            requests.post(callback["url"], json=callback.get("data"), timeout=5)
+        except Exception as exception:
+            log_debug()
 
 if __name__ == "__main__": 
+    if not client.bucket_exists("output"):
+        client.make_bucket("output")
+
+    log_info()
+    
+    while True:
+        try:
+            work = redisClient.brpop("toWorker", timeout=0)
+            job = json.loads(work[1])
+            process(job)
+
+        except Exception as exception:
+            log_info()
+        sys.stdout.flush()
