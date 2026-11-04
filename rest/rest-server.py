@@ -57,15 +57,16 @@ def queue():
 def separate():
     request_json = request.get_json(silent = True)
     if not request_json or "mp3" not in request_json: # Look for requests that aren't a json or doesn't have an "mp3" field
-        log_info()
+        log_info(f"/apiv1/separate request failed")
         return jsonify({"error": "Request must be JSON with a base64 'mp3' field"})
     decoded_mp3_bytes = base64.b64decode(request_json["mp3"])
-    mp3_song_hash = hashlib.sha224(decoded_mp3_bytes).hexidigest()
-    client.put_object("queue", f"{mp3_song_hash}.mp3", io.BytesIO(decoded_mp3_bytes), length=len(decoded_mp3_bytes), content_type="audio/mpeg")
-    log_debug()
+    mp3_song_hash = hashlib.sha224(decoded_mp3_bytes).hexdigest()
+    client.put_object(f"queue", f"{mp3_song_hash}.mp3", io.BytesIO(decoded_mp3_bytes), length=len(decoded_mp3_bytes), content_type="audio/mpeg")
+    log_debug(f"Stored {len(decoded_mp3_bytes)} bytes as queue/{mp3_song_hash}.mp3")
     job = {"hash": mp3_song_hash, "model": request_json.get("model"), "callback": request_json.get("callback")}
     redisClient.lpush("toWorker", json.dumps(job))
-    log_info()
+    log_info(f"Queued song {mp3_song_hash}")
+    # mp3_song_hash.reverse()
     return jsonify({"hash": mp3_song_hash, "reason": "Song enqueued for separation"})
 
 if __name__ == "__main__": 
