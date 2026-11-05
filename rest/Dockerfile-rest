@@ -1,0 +1,11 @@
+# creates the container with a python image
+FROM python:3.12-slim
+
+# executes commands
+RUN pip install --no-cache-dir flask redis minio jsonpickle requests
+
+WORKDIR /srv
+
+COPY rest-server.py /srv/
+
+CMD ["python3", "-u", "rest-server.py"]

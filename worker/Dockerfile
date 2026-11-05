@@ -8,5 +8,5 @@ RUN python3 -m pip install --no-cache-dir minio redis requests
 WORKDIR /srv
 COPY worker-server.py /srv/
 
-# start with running the worker, instead of the default
+# start with running the worker, instead of the default (changes the default command to execute)
 ENTRYPOINT ["python3", "-u", "/srv/worker-server.py"]
