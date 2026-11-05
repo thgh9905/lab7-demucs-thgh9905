@@ -1,4 +1,5 @@
 #!/bin/sh
+kubectl apply -f minio/minio-deployment.yaml
 kubectl apply -f redis/redis-deployment.yaml
 kubectl apply -f redis/redis-service.yaml
 
