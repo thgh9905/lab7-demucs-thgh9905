@@ -14,3 +14,12 @@ spec:
 #
 # Your ingress rules here
 #
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: rest
+            port:
+              number: 5000
