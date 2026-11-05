@@ -5,3 +5,5 @@ I found it useful to deploy [min.io](http://min.io) locally using the [direction
 To do this, just follow the  [directions in the Kubernetes tutorial](https://github.com/cu-csci-4253-datacenter/kubernetes-tutorial/tree/master/06-minio) and set up an `ExternalName` service definition -- that will let you specify the Min.io host as `minio` in your applications.
 
 We've copied that specification and the Helm configuration file from  [the Kubernetes tutorial](https://github.com/cu-csci-4253-datacenter/kubernetes-tutorial/tree/master/06-minio) -- if you modify things, you might want to document that here.
+
+- I've made a `minio-deployment.yaml` file to deploy MinIO, instead of using Bitnami Helm Charts that the tutorial mentioned. I've used `cgr.dev/chainguard/minio` for the container image.
