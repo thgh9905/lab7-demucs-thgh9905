@@ -37,10 +37,10 @@ def log_info(message, key=infoKey):
 
 def process(job): # pass in a dict
     mp3_song_hash = job["hash"]
-    requested_model = job.get("model") or "htdemucs"
+    requested_model = job.get("model") or "mdx_extra_q"
 
-    if requested_model not in {"htdemucs", "htdemucs_ft", "hdemucs_mmi", "mdx", "mdx_extra", "mdx_q", "mdx_extra_q"}: # if an unknown model is passed, change it to default
-        requested_model = "htdemucs"
+    if requested_model not in {"htdemucs_ft", "hdemucs_mmi", "mdx", "mdx_extra", "mdx_q", "mdx_extra_q"}: # if an unknown model is passed, change it to default
+        requested_model = "mdx_extra_q"
 
     input_path = os.path.join("/tmp", f"{mp3_song_hash}.mp3")
     client.fget_object("queue", f"{mp3_song_hash}.mp3", input_path)
@@ -48,6 +48,10 @@ def process(job): # pass in a dict
 
     command = ["python3", "-m", "demucs.separate", "-n", requested_model, "--mp3", "--out", "/tmp/output", input_path]
     result = subprocess.run(command) # run the command
+
+    if result.returncode != 0:
+        log_info(f"Command failed to run on {mp3_song_hash}")
+        return
 
     write_dir = os.path.join("/tmp/output", requested_model, mp3_song_hash)
 
@@ -63,17 +67,17 @@ def process(job): # pass in a dict
     shutil.rmtree(write_dir)
 
     callback = job.get("callback")
-    if callback.get("url"): 
+    if callback and callback.get("url"): 
         try:
             requests.post(callback["url"], json=callback.get("data"), timeout=5)
         except Exception as exception:
-            log_debug()
+            log_debug(f"Error for {callback['url']}: {exception}")
 
 if __name__ == "__main__": 
     if not client.bucket_exists("output"):
         client.make_bucket("output")
 
-    log_info()
+    log_info(f"Redis at {redisHost}:{redisPort}, MinIO at {minioHost}")
     
     while True:
         try:
@@ -82,5 +86,5 @@ if __name__ == "__main__":
             process(job)
 
         except Exception as exception:
-            log_info()
+            log_info(f"Error: {exception}")
         sys.stdout.flush()

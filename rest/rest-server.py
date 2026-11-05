@@ -8,7 +8,7 @@ import base64
 import hashlib
 from minio import Minio
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 
 redisHost = os.getenv("REDIS_HOST") or "localhost"
 redisPort = int(os.getenv("REDIS_PORT") or 6379)
@@ -68,6 +68,26 @@ def separate():
     log_info(f"Queued song {mp3_song_hash}")
     # mp3_song_hash.reverse()
     return jsonify({"hash": mp3_song_hash, "reason": "Song enqueued for separation"})
+
+@app.route("/apiv1/track/<mp3_song_hash>/<track>", methods=["GET"])
+def get_track(mp3_song_hash, track):
+    object_name = f"{mp3_song_hash}-{track}"
+
+    try:
+        response = client.get_object("output", object_name)
+        bytes_data = response.read()
+        response.close()
+        response.release_conn()
+
+    except Exception:
+        return jsonify({"error": f"{object_name} not found"}), 404
+    return send_file(io.BytesIO(bytes_data), mimetype="audio/mpeg", as_attachment=True, download_name=object_name)
+
+@app.route("/apiv1/remove/<mp3_song_hash>/<track>", methods=["GET", "DELETE"])
+def remove_track(mp3_song_hash, track):
+    object_name = f"{mp3_song_hash}-{track}"
+    client.remove_object("output", object_name)
+    return jsonify({"Removed": object_name})
 
 if __name__ == "__main__": 
     log_info(f"Starting REST server. Redis is at {redisHost}:{redisPort}")
